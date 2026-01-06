@@ -1,0 +1,182 @@
+-- 1. Create and use the database
+DROP DATABASE IF EXISTS maintenance_system;
+CREATE DATABASE maintenance_system;
+USE maintenance_system;
+
+-- 2. Create `companies` table (Client companies)
+CREATE TABLE companies (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert mock companies
+INSERT INTO companies (name) VALUES
+('ABC Construction'),
+('XYZ Industries'),
+('Maintenance Corp');
+
+-- 3. Create `users` table (12 role types)
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(255) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('admin', 'inventory', 'manager', 'client', 
+            'elec', 'clim', 'plomb', 'ventil', 
+            'menuise', 'peint', 'vrd', 'ssi') NOT NULL DEFAULT 'employee',
+  company_id INT,
+  company_name VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_role (role),
+  INDEX idx_company (company_id),
+  CONSTRAINT fk_users_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL
+);
+
+-- Insert mock users with 8 departments
+INSERT INTO users (username, password_hash, role, company_name) VALUES
+-- Admin & Management
+('admin', '$2b$10$hashed_password_here', 'admin', 'System'),
+('inventory', '$2b$10$hashed_password_here', 'inventory', 'Maintenance Corp'),
+('manager', '$2b$10$hashed_password_here', 'manager', 'Maintenance Corp'),
+('client_test', '$2b$10$hashed_password_here', 'client', 'ABC Construction'),
+
+-- 8 Employee Departments (all passwords: feds)
+('elec', '$2b$10$hashed_password_here', 'elec', 'ELECTRICITE Department'),
+('clim', '$2b$10$hashed_password_here', 'clim', 'CLIMATISATION Department'),
+('plomb', '$2b$10$hashed_password_here', 'plomb', 'PLOMBERIE Department'),
+('ventil', '$2b$10$hashed_password_here', 'ventil', 'VENTILATION Department'),
+('menuise', '$2b$10$hashed_password_here', 'menuise', 'MENUISERIE Department'),
+('peint', '$2b$10$hashed_password_here', 'peint', 'PEINTURE Department'),
+('vrd', '$2b$10$hashed_password_here', 'vrd', 'VRD Department'),
+('ssi', '$2b$10$hashed_password_here', 'ssi', 'SSI Department');
+
+-- 4. Create `tasks` table (Daily employee tasks)
+CREATE TABLE tasks (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  company_id INT NOT NULL,
+  task_name VARCHAR(255) NOT NULL,
+  week_day VARCHAR(20),
+  week_number INT NOT NULL,
+  completed BOOLEAN DEFAULT FALSE,
+  start_time TIME,
+  end_time TIME,
+  remarks TEXT,
+  execution_date DATE NOT NULL,
+  archived BOOLEAN DEFAULT FALSE,
+  archive_date TIMESTAMP NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_company_date (company_id, execution_date),
+  INDEX idx_completed (completed),
+  INDEX idx_archived (archived),
+  CONSTRAINT fk_tasks_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+
+-- Insert mock tasks
+INSERT INTO tasks (company_id, task_name, week_day, week_number, execution_date) VALUES
+(1, 'Electrical Panel Inspection', 'Monday', 1, '2026-01-05'),
+(1, 'HVAC System Maintenance', 'Tuesday', 1, '2026-01-06'),
+(1, 'Plumbing Leak Repair', 'Wednesday', 1, '2026-01-07');
+
+-- 5. Create `damage_reports` table
+CREATE TABLE damage_reports (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  company_id INT NOT NULL,
+  description TEXT NOT NULL,
+  start_time TIME,
+  end_time TIME,
+  photo_before_url TEXT,
+  photo_after_url TEXT,
+  report_date DATE NOT NULL,
+  status ENUM('draft', 'submitted', 'completed') DEFAULT 'draft',
+  completed BOOLEAN DEFAULT FALSE,
+  completed_at TIMESTAMP NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_report_date (report_date),
+  INDEX idx_status (status),
+  CONSTRAINT fk_damage_reports_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+
+-- Insert mock damage reports
+INSERT INTO damage_reports (company_id, description, report_date) VALUES
+(1, 'Broken window in conference room', '2026-01-05'),
+(1, 'Leaking pipe in restroom', '2026-01-06');
+
+-- 6. Create `tickets` table (Client maintenance requests)
+CREATE TABLE tickets (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  client_name VARCHAR(100),
+  issue_description TEXT NOT NULL,
+  photo_url TEXT,
+  status ENUM('pending', 'assigned', 'completed', 'archived') DEFAULT 'pending',
+  status_reason TEXT,
+  client_user_id INT,
+  submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  completed_at TIMESTAMP NULL,
+  archived BOOLEAN DEFAULT FALSE,
+  archive_date TIMESTAMP NULL,
+  INDEX idx_status (status),
+  INDEX idx_submitted_at (submitted_at),
+  CONSTRAINT fk_tickets_user FOREIGN KEY (client_user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Insert mock tickets
+INSERT INTO tickets (client_name, issue_description, status) VALUES
+('ABC Construction', 'Air conditioning not working in office 302', 'pending'),
+('XYZ Industries', 'Emergency light fixture replacement needed', 'assigned');
+
+-- 7. Create `inventory` table
+CREATE TABLE inventory (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  item_name VARCHAR(255) NOT NULL,
+  quantity INT NOT NULL DEFAULT 0,
+  location VARCHAR(100),
+  category VARCHAR(50),
+  notes TEXT,
+  last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_category (category),
+  INDEX idx_location (location)
+);
+
+-- Insert mock inventory
+INSERT INTO inventory (item_name, quantity, category) VALUES
+('Electrical Wire', 50, 'ELECTRICITE'),
+('HVAC Filters', 20, 'CLIMATISATION'),
+('Pipe Fittings', 100, 'PLOMBERIE');
+
+-- 8. Create `ticket_materials` table
+CREATE TABLE ticket_materials (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ticket_id INT NOT NULL,
+  material_name VARCHAR(100) NOT NULL,
+  quantity INT DEFAULT 1,
+  requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  fulfilled BOOLEAN DEFAULT FALSE,
+  INDEX idx_ticket (ticket_id),
+  INDEX idx_fulfilled (fulfilled),
+  CONSTRAINT fk_ticket_materials_ticket FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+);
+
+-- Insert mock ticket materials
+INSERT INTO ticket_materials (ticket_id, material_name, quantity) VALUES
+(1, 'AC Compressor', 1),
+(2, 'LED Light Fixtures', 3);
+
+-- 9. Create `employee_checkins` table
+CREATE TABLE employee_checkins (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  company_id INT NOT NULL,
+  employee_name VARCHAR(100) NOT NULL,
+  checkin_date DATE NOT NULL,
+  checkin_time TIME NOT NULL,
+  checkout_time TIME,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_checkin (company_id, employee_name, checkin_date),
+  INDEX idx_checkin_date (checkin_date),
+  CONSTRAINT fk_checkins_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+
+-- Insert mock checkins
+INSERT INTO employee_checkins (company_id, employee_name, checkin_date, checkin_time) VALUES
+(1, 'Electrician Team', '2026-01-05', '08:00:00'),
+(1, 'Plumbing Team', '2026-01-05', '08:30:00');
+
