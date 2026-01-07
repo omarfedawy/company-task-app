@@ -55,7 +55,7 @@ A comprehensive enterprise system for maintenance management, employee task trac
 | **Inventory Manager** | inventory | feds | Inventory | Stock management, material fulfillment |
 | **Employee Manager** | manager | feds | Management | Employee oversight, task assignment |
 | **Client** | client_test | test123 | External | Ticket submission and tracking |
-| **Electricity Employee** | elec | feds | ELECTRICITE | Daily electrical tasks + damage reports |
+| **Electricity Employee** | electric | feds | ELECTRICITE | Daily electrical tasks + damage reports |
 | **Climatisation Employee** | clim | feds | CLIMATISATION | HVAC tasks + damage reports |
 | **Plumbing Employee** | plomb | feds | PLOMBERIE | Plumbing tasks + damage reports |
 | **Ventilation Employee** | ventil | feds | VENTILATION | Ventilation tasks + damage reports |
